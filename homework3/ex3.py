@@ -122,7 +122,7 @@ def circularShift(img, dx, dy):
     img = img.copy()
     result = np.zeros_like(img)
     H,W = img.shape
-    
+
     result[:-dy,:-dx] = img[dy:,dx:]
     result[:-dy,-dx:] = img[dy:,:dx]
     result[-dy:,:-dx] = img[:dy,dx:]
@@ -151,9 +151,16 @@ def calcBinaryMask(img, thresh = 0.3):
 
     # TODO: 
     # -compute gradients
-    # -threshold gradients 
+    grads = calcDirectionalGrad(img)
+
+    # -threshold gradients
+    betrag = np.absolute(grads)
+    t = thresh*betrag.max()
+    betrag[betrag<=t]=0
+    betrag[betrag>t]=1
+
     # -return binary mask
-    return np.zeros_like(img)
+    return betrag
 
 
 def correlation(img, template):
@@ -183,12 +190,28 @@ def correlation(img, template):
     
     # TODO:
     # -compute gradient of the image
+    grads_img = calcDirectionalGrad(img)
     # -compute gradient of the template
+    grads_template = calcDirectionalGrad(template)
+
+    template_frame = np.zeros(img.shape)
+    template_frame = template_frame.astype(complex)
+    template_frame[:template.shape[0], :template.shape[1]] += template
+
     # -copy template gradient into larger frame
+    frame = np.zeros(grads_img.shape)
+    frame = frame.astype(complex)
+    frame[:grads_template.shape[0], :grads_template.shape[1]] += grads_template
     # -apply a circular shift so the center of the original template is in the
     #   upper left corner
+    shift = circularShift(frame, (int) (grads_template.shape[1]/2), (int) (grads_template.shape[0]/2))
     # -normalize template
-    # -compute correlation
+    norm = shift/np.sum(np.absolute(shift))
+    # -compute correlation //Todo: Correlation calculation how?
+    #print(np.absolute(template_frame))
+    #t = norm * (calcBinaryMask(template_frame))
+
+    #utils.show(np.absolute(t))
 
     return np.zeros_like(img)
 
@@ -219,11 +242,15 @@ def GeneralizedHoughTransform(img, template, angles, scales):
         Note the order of these values.
     """
     # TODO:
-    # for every combination of angles and scales 
-    # -distort template
-    # -compute the correlation
-    # -store results with parameters in a list
-    
+    # for every combination of angles and scales
+    for angle, scale in zip(angles,scales):
+        # -distort template
+        distorted_template = rotateAndScale(template, angle, scale)
+        # -compute the correlation
+        cor = correlation(img, distorted_template)
+        # -store results with parameters in a list
+
+
     return [(np.zeros_like(img), 0, 1)]
 
 
