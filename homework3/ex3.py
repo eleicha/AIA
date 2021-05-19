@@ -195,26 +195,25 @@ def correlation(img, template):
     grads_template = calcDirectionalGrad(template)
 
     template_frame = np.zeros(img.shape)
-    template_frame = template_frame.astype(complex)
     template_frame[:template.shape[0], :template.shape[1]] += template
 
     # -copy template gradient into larger frame
-    frame = np.zeros(grads_img.shape)
+    frame = np.zeros(img.shape)
     frame = frame.astype(complex)
-    frame[:grads_template.shape[0], :grads_template.shape[1]] += grads_template
+    frame[:grads_template.shape[0], :grads_template.shape[1]] += template
     # -apply a circular shift so the center of the original template is in the
     #   upper left corner
     shift = circularShift(frame, (int) (grads_template.shape[1]/2), (int) (grads_template.shape[0]/2))
+    utils.show(np.absolute(shift))
     # -normalize template
     norm = shift/np.sum(np.absolute(shift))
-    # -compute correlation //Todo: Correlation calculation how?
-    #print(np.absolute(template_frame))
-    #t = norm * (calcBinaryMask(template_frame))
+    utils.show(np.absolute(norm))
+    # -compute correlation
+    t = np.fft.fft(norm * (calcBinaryMask(template_frame)))
+    i = np.fft.fft(grads_img)
+    result = np.re. np.fft.ifft(np.conj(t)*i)
 
-    #utils.show(np.absolute(t))
-
-    return np.zeros_like(img)
-
+    return np.absolute(result)
 
 
 def GeneralizedHoughTransform(img, template, angles, scales):
@@ -243,17 +242,16 @@ def GeneralizedHoughTransform(img, template, angles, scales):
     """
     # TODO:
     # for every combination of angles and scales
+    tuple_list = []
     for angle, scale in zip(angles,scales):
         # -distort template
         distorted_template = rotateAndScale(template, angle, scale)
         # -compute the correlation
         cor = correlation(img, distorted_template)
         # -store results with parameters in a list
+        tuple_list.append(tuple((cor, angle, scale)))
 
-
-    return [(np.zeros_like(img), 0, 1)]
-
-
+    return tuple_list
 
 
 if __name__=="__main__":
