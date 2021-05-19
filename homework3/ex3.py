@@ -211,7 +211,7 @@ def correlation(img, template):
     # -compute correlation
     t = np.fft.fft(norm * (calcBinaryMask(template_frame)))
     i = np.fft.fft(grads_img)
-    result = np.re. np.fft.ifft(np.conj(t)*i)
+    result = np.fft.ifft(np.conj(t)*i)
 
     return np.absolute(result)
 
