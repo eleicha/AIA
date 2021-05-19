@@ -10,6 +10,7 @@ import cv2
 import utils
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy import signal
 
 def nonMaxSuprression(img, d=5):
     """
@@ -194,26 +195,24 @@ def correlation(img, template):
     # -compute gradient of the template
     grads_template = calcDirectionalGrad(template)
 
-    template_frame = np.zeros(img.shape)
-    template_frame[:template.shape[0], :template.shape[1]] += template
+    #create T from the slides --> Simon said to do this before shifting
+    create_T = grads_template*(calcBinaryMask(template))
 
     # -copy template gradient into larger frame
     frame = np.zeros(img.shape)
     frame = frame.astype(complex)
-    frame[:grads_template.shape[0], :grads_template.shape[1]] += template
+    frame[:grads_template.shape[0], :grads_template.shape[1]] += create_T
     # -apply a circular shift so the center of the original template is in the
     #   upper left corner
-    shift = circularShift(frame, (int) (grads_template.shape[1]/2), (int) (grads_template.shape[0]/2))
-    utils.show(np.absolute(shift))
+    shift = circularShift(frame, (int) (template.shape[1]/2), (int) (template.shape[0]/2))
     # -normalize template
     norm = shift/np.sum(np.absolute(shift))
-    utils.show(np.absolute(norm))
     # -compute correlation
-    t = np.fft.fft(norm * (calcBinaryMask(template_frame)))
-    i = np.fft.fft(grads_img)
-    result = np.fft.ifft(np.conj(t)*i)
+    t = np.fft.fft2(norm)
+    i = np.fft.fft2(grads_img)
+    result = np.absolute(np.real(np.fft.ifft2(i*t.conj())))
 
-    return np.absolute(result)
+    return result
 
 
 def GeneralizedHoughTransform(img, template, angles, scales):
@@ -243,13 +242,14 @@ def GeneralizedHoughTransform(img, template, angles, scales):
     # TODO:
     # for every combination of angles and scales
     tuple_list = []
-    for angle, scale in zip(angles,scales):
-        # -distort template
-        distorted_template = rotateAndScale(template, angle, scale)
-        # -compute the correlation
-        cor = correlation(img, distorted_template)
-        # -store results with parameters in a list
-        tuple_list.append(tuple((cor, angle, scale)))
+    for angle in angles:
+        for scale in scales:
+            # -distort template
+            distorted_template = rotateAndScale(template, angle, scale)
+            # -compute the correlation
+            cor = correlation(img, distorted_template)
+            # -store results with parameters in a list
+            tuple_list.append(tuple((cor, angle, scale)))
 
     return tuple_list
 
