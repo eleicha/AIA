@@ -36,7 +36,7 @@ def binarizeImage(img):
     img = img.copy()
     if len(img.shape)>2 and img.shape[2]==3:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    thresh=130
+    thresh=120
     #TODO:
     # ---- Binarize Image ----
     # Given a grayscale image, compute a binary representation 
