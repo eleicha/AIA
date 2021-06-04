@@ -7,9 +7,12 @@ import random
 import torchvision
 import numpy as np
 from matplotlib import pyplot as plt
+from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score
 import sklearn
+from sklearn.preprocessing import PowerTransformer
+import cv2
 
 def prepareData(n=1000):
     """
@@ -59,7 +62,6 @@ def prepareData(n=1000):
     
     
     imgs = [X[i,:,:] for i in range(10)]
-    
 
     fig=plt.figure(figsize=(8, 5))
     columns = 5
@@ -70,7 +72,6 @@ def prepareData(n=1000):
         plt.axis('off')
         plt.title(str(y[i-1]))
     plt.show()
-    
     
     print(X.shape)
     return X,y
@@ -90,6 +91,13 @@ def featureExtraction(x):
     ndarray
         The resulting feature should be one-dimensional (use x.flatten())
     """
+
+    #cv2.dilate(x,x,(7,7))
+    #cv2.erode(x,x,(7,7))
+
+    #x = (x - x.mean().astype(np.float32))/(x.std().astype(np.float32))
+    #x = (x-np.min(x))/(np.max(x)-np.min(x))
+
     return x.flatten()
 
 def preprocessDataset(X):
@@ -107,9 +115,12 @@ def preprocessDataset(X):
     """
     
     # TODO: (Optional) You can change this if necessary
+
     X_prep = []
     for i in range(len(X)):
         x = X[i,:,:]
+        cv2.dilate(x, x, (3,3))
+        cv2.erode(x, x, (3,3))
         x = featureExtraction(x)
         X_prep.append(x)    
     X_prep = np.array(X_prep)
@@ -118,7 +129,10 @@ def preprocessDataset(X):
 def train(X,y):
     # TODO: Select a classifier from sklearn and train it on the data
     from sklearn.naive_bayes import GaussianNB
-    model = GaussianNB()
+    from sklearn.naive_bayes import MultinomialNB
+    from sklearn.naive_bayes import ComplementNB
+    #model = MultinomialNB(alpha=5e-2)
+    model = SGDClassifier(random_state=42)
     model.fit(X,y)
     return model
 
@@ -126,7 +140,7 @@ def train(X,y):
 if __name__=="__main__":
     
     # Number of data samples (reduce number during testing if procedure takes too long)
-    n = 10000
+    n = 1000
     X,y = prepareData(n)
     
     # Number of k-folds
